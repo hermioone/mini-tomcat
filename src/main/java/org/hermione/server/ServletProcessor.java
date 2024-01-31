@@ -1,5 +1,7 @@
 package org.hermione.server;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.text.StrSubstitutor;
 
 import javax.servlet.Servlet;
@@ -14,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class ServletProcessor {
     //返回串的模板，实际返回时替换变量
     private static String OKMessage = "HTTP/1.1 ${StatusCode} ${StatusName}\r\n"+
@@ -45,7 +48,7 @@ public class ServletProcessor {
             response.setCharacterEncoding("UTF-8");
             writer = response.getWriter();
         } catch (IOException e1) {
-            e1.printStackTrace();
+            log.error(ExceptionUtils.getStackTrace(e1));
         }
         //加载servlet
         Class<?> servletClass = null;

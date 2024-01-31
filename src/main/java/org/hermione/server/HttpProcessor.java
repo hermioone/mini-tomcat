@@ -1,9 +1,13 @@
 package org.hermione.server;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
+@Slf4j
 public class HttpProcessor implements Runnable{
     Socket socket;
     boolean available = false;
@@ -31,7 +35,7 @@ public class HttpProcessor implements Runnable{
         try {
             Thread.sleep(3000);
         } catch (InterruptedException e1) {
-            e1.printStackTrace();
+            log.error(ExceptionUtils.getStackTrace(e1));
         }
         InputStream input = null;
         OutputStream output = null;
@@ -58,7 +62,7 @@ public class HttpProcessor implements Runnable{
             // 关闭 socket
             socket.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(ExceptionUtils.getStackTrace(e));
         }
     }
     synchronized void assign(Socket socket) {
@@ -67,6 +71,7 @@ public class HttpProcessor implements Runnable{
             try {
                 wait();
             } catch (InterruptedException e) {
+                log.error(ExceptionUtils.getStackTrace(e));
             }
         }
         // 存储新可用的 Socket 并通知我们的线程
@@ -80,6 +85,7 @@ public class HttpProcessor implements Runnable{
             try {
                 wait();
             }catch (InterruptedException e) {
+                log.error(ExceptionUtils.getStackTrace(e));
             }
         }
         // 通知Connector我们已经收到这个Socket了

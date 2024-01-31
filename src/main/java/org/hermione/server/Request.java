@@ -1,5 +1,8 @@
 package org.hermione.server;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -15,6 +18,7 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
 
+@Slf4j
 public class Request implements ServletRequest {
     private final InputStream input;
     private String uri;
@@ -31,7 +35,7 @@ public class Request implements ServletRequest {
             i = input.read(buffer);
         }
         catch (IOException e) {
-            e.printStackTrace();
+            log.error(ExceptionUtils.getStackTrace(e));
             i = -1;
         }
         for (int j=0; j<i; j++) {
