@@ -24,7 +24,7 @@ public class ServletProcessor {
             "Server: minit\r\n"+
             "Date: ${ZonedDateTime}\r\n"+
             "\r\n";
-    public void process(Request request, Response response) {
+    public void process(HttpRequest request, Response response) {
         String uri = request.getUri(); //获取URI
         //按照简单规则确定servlet名，认为最后一个/符号后的就是servlet名
         String servletName = uri.substring(uri.lastIndexOf("/") + 1);

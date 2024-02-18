@@ -16,7 +16,7 @@ public class StaticResourceProcessor {
     private static final int BUFFER_SIZE = 1024;
 
     //处理过程很简单，先将响应头写入输出流，然后从文件中读取内容写入输出流
-    public void process(Request request, Response response) throws IOException {
+    public void process(HttpRequest request, Response response) throws IOException {
         byte[] bytes = new byte[BUFFER_SIZE];
         FileInputStream fis = null;
         OutputStream output = null;

@@ -43,14 +43,10 @@ public class HttpProcessor implements Runnable{
             input = socket.getInputStream();
             output = socket.getOutputStream();
             // 创建请求对象并解析
-            Request request = new Request(input);
-            request.parse();
+            HttpRequest request = new HttpRequest(input);
+            request.parse(socket);
             // 创建响应对象
             Response response = new Response(output);
-            response.setRequest(request);
-//               response.sendStaticResource();
-            // 检查这是对servlet还是静态资源的请求
-            // a request for a servlet begins with "/servlet/"
             if (request.getUri().startsWith("/servlet/")) {
                 ServletProcessor processor = new ServletProcessor();
                 processor.process(request, response);
