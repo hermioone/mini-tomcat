@@ -7,7 +7,6 @@ import org.apache.commons.lang3.text.StrSubstitutor;
 import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLStreamHandler;

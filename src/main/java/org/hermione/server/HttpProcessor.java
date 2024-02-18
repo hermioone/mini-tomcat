@@ -8,13 +8,15 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 @Slf4j
-public class HttpProcessor implements Runnable{
+public class HttpProcessor implements Runnable {
     Socket socket;
     boolean available = false;
     HttpConnector connector;
+
     public HttpProcessor(HttpConnector connector) {
         this.connector = connector;
     }
+
     @Override
     public void run() {
         while (true) {
@@ -27,10 +29,12 @@ public class HttpProcessor implements Runnable{
             connector.recycle(this);
         }
     }
+
     public void start() {
         Thread thread = new Thread(this);
         thread.start();
     }
+
     public void process(Socket socket) {
         try {
             Thread.sleep(3000);
@@ -45,13 +49,20 @@ public class HttpProcessor implements Runnable{
             // 创建请求对象并解析
             HttpRequest request = new HttpRequest(input);
             request.parse(socket);
+
+            // handle session
+            if (request.getSessionId() == null || request.getSessionId().isEmpty()) {
+                // 如果没有 session，就创建 session
+                request.getSession(true);
+            }
+
             // 创建响应对象
             HttpResponse response = new HttpResponse(output);
+            response.setRequest(request);
             if (request.getUri().startsWith("/servlet/")) {
                 ServletProcessor processor = new ServletProcessor();
                 processor.process(request, response);
-            }
-            else {
+            } else {
                 StaticResourceProcessor processor = new StaticResourceProcessor();
                 processor.process(request, response);
             }
@@ -61,6 +72,7 @@ public class HttpProcessor implements Runnable{
             log.error(ExceptionUtils.getStackTrace(e));
         }
     }
+
     synchronized void assign(Socket socket) {
         // 等待 connector 提供新的 Socket
         while (available) {
@@ -75,12 +87,13 @@ public class HttpProcessor implements Runnable{
         available = true;
         notifyAll();
     }
+
     private synchronized Socket await() {
         // 等待 connector 提供一个新的 Socket
         while (!available) {
             try {
                 wait();
-            }catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 log.error(ExceptionUtils.getStackTrace(e));
             }
         }
