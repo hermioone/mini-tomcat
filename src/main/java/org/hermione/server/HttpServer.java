@@ -1,18 +1,17 @@
 package org.hermione.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+
+@Slf4j
 public class HttpServer {
     public static final String WEB_ROOT =
             System.getProperty("user.dir") + File.separator + "webroot";
     public static void main(String[] args) {
+        long start = System.currentTimeMillis();
         HttpConnector connector = new HttpConnector();
         connector.start();
+        log.info("Server starts within {}ms", System.currentTimeMillis() - start);
     }
 }

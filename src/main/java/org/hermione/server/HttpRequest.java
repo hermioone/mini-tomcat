@@ -128,7 +128,7 @@ public class HttpRequest implements HttpServletRequest {
 
     @Override
     public String getMethod() {
-        return null;
+        return new String(this.requestLine.method, 0, this.requestLine.methodEnd);
     }
 
     @Override
@@ -313,7 +313,7 @@ public class HttpRequest implements HttpServletRequest {
 
     @Override
     public String getProtocol() {
-        return null;
+        return new String(this.requestLine.protocol, 0, this.requestLine.protocolEnd);
     }
 
     @Override
