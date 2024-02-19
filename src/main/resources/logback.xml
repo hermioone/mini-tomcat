@@ -31,6 +31,5 @@
     <!-- 日志输出级别 ，一定要把上边定义的appender 写在下面否者会导致日志文件生成不了，或者为空的日志文件-->
     <root level="INFO">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE" />
     </root>
 </configuration>

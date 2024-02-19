@@ -3,6 +3,7 @@ package org.hermione.server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -12,6 +13,13 @@ public class HttpProcessor implements Runnable {
     Socket socket;
     boolean available = false;
     HttpConnector connector;
+
+    private int serverPort = 0;
+    /**
+     * 决定是否关闭 Socket
+     */
+    private boolean keepAlive = false;
+    private boolean http11 = true;
 
     public HttpProcessor(HttpConnector connector) {
         this.connector = connector;
@@ -36,41 +44,58 @@ public class HttpProcessor implements Runnable {
     }
 
     public void process(Socket socket) {
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e1) {
-            log.error(ExceptionUtils.getStackTrace(e1));
-        }
         InputStream input = null;
         OutputStream output = null;
         try {
             input = socket.getInputStream();
             output = socket.getOutputStream();
-            // 创建请求对象并解析
-            HttpRequest request = new HttpRequest(input);
-            request.parse(socket);
-
-            // handle session
-            if (request.getSessionId() == null || request.getSessionId().isEmpty()) {
-                // 如果没有 session，就创建 session
+            keepAlive = true;
+            while (keepAlive) {
+                // create Request object and parse
+                HttpRequest request = new HttpRequest(input);
+                request.parse(socket);
+                // handle session
                 request.getSession(true);
+                // create Response object
+                HttpResponse response = new HttpResponse(output);
+                response.setRequest(request);
+//               response.sendStaticResource();
+                request.setResponse(response);
+                try {
+                    response.sendHeaders();
+                } catch (IOException e1) {
+                    log.info(ExceptionUtils.getStackTrace(e1));
+                }
+                // check if this is a request for a servlet or a static resource
+                // a request for a servlet begins with "/servlet/"
+                if (request.getUri().startsWith("/servlet/")) {
+                    ServletProcessor processor = new ServletProcessor();
+                    processor.process(request, response);
+                } else {
+                    StaticResourceProcessor processor = new StaticResourceProcessor();
+                    processor.process(request, response);
+                }
+                finishResponse(response);
+                log.info("response header connection------" + response.getHeader("Connection"));
+                /*if ("close".equals(response.getHeader("Connection"))) {
+                    // 关闭连接
+                    log.warn("Socket closed");
+                    keepAlive = false;
+                }*/
+                // 应该像上面注释掉的代码一样，检测到 response header 中带有 Connection: close 再设置 keepAlive = false
+                // 这里为了测试方便，就每个请求结束都设置 keepAlive 为 false
+                keepAlive = false;
             }
-
-            // 创建响应对象
-            HttpResponse response = new HttpResponse(output);
-            response.setRequest(request);
-            if (request.getUri().startsWith("/servlet/")) {
-                ServletProcessor processor = new ServletProcessor();
-                processor.process(request, response);
-            } else {
-                StaticResourceProcessor processor = new StaticResourceProcessor();
-                processor.process(request, response);
-            }
-            // 关闭 socket
+            // Close the socket
             socket.close();
+            socket = null;
         } catch (Exception e) {
             log.error(ExceptionUtils.getStackTrace(e));
         }
+    }
+
+    private void finishResponse(HttpResponse response) {
+        response.finishResponse();
     }
 
     synchronized void assign(Socket socket) {

@@ -1,29 +1,38 @@
 package org.hermione.server;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class HttpResponse implements HttpServletResponse {
     HttpRequest request;
     @Getter
     OutputStream output;
     PrintWriter writer;
     String contentType = null;
+    /**
+     * 对于动态内容，tomcat 中无法确定 content-length，所以就不再使用 content-length，而是使用 Transfer-Encoding: chunked 分块传输
+     */
+    @Getter
     long contentLength = -1;
     String charset = null;
-    String characterEncoding = null;
+    String characterEncoding = "UTF-8";
     String protocol = "HTTP/1.1";
     //headers是一个保存头信息的map
     Map<String, String> headers = new ConcurrentHashMap<>();
@@ -33,6 +42,22 @@ public class HttpResponse implements HttpServletResponse {
 
     public HttpResponse(OutputStream output) {
         this.output = output;
+    }
+
+    public HttpResponse() {
+    }
+
+    public void setStream(OutputStream output) {
+        this.output = output;
+    }
+
+    //提供这个方法完成输出
+    public void finishResponse() {
+        try {
+            this.getWriter().flush();
+        } catch (IOException e) {
+            log.error(ExceptionUtils.getStackTrace(e));
+        }
     }
 
     public void setRequest(HttpRequest request) {
@@ -77,9 +102,10 @@ public class HttpResponse implements HttpServletResponse {
         return "HTTP/1.1";
     }
 
+    final ArrayList<Cookie> cookies = new ArrayList<>();
+
     public void sendHeaders() throws IOException {
         PrintWriter outputWriter = getWriter();
-        //下面这一端是输出状态行
         outputWriter.print(this.getProtocol());
         outputWriter.print(" ");
         outputWriter.print(status);
@@ -91,10 +117,9 @@ public class HttpResponse implements HttpServletResponse {
         if (getContentType() != null) {
             outputWriter.print("Content-Type: " + getContentType() + "\r\n");
         }
-        if (this.contentLength >= 0) {
-            outputWriter.print("Content-Length: " + this.contentLength + "\r\n");
+        if (getContentLength() >= 0) {
+            outputWriter.print("Content-Length: " + getContentLength() + "\r\n");
         }
-        //输出头信息
         for (String name : headers.keySet()) {
             String value = headers.get(name);
             outputWriter.print(name);
@@ -102,7 +127,23 @@ public class HttpResponse implements HttpServletResponse {
             outputWriter.print(value);
             outputWriter.print("\r\n");
         }
-        //最后输出空行
+        HttpSession session = this.request.getSession(false);
+        if (session != null) {
+            Cookie cookie = new Cookie(DefaultHeaders.JSESSIONID_NAME, session.getId());
+            cookie.setMaxAge(-1);
+            addCookie(cookie);
+        }
+        synchronized (cookies) {
+            for (Cookie cookie : cookies) {
+                outputWriter.print(CookieTools.getCookieHeaderName(cookie));
+                outputWriter.print(": ");
+                StringBuffer sbValue = new StringBuffer();
+                CookieTools.getCookieHeaderValue(cookie, sbValue);
+                System.out.println("set cookie jsessionid string : " + sbValue);
+                outputWriter.print(sbValue);
+                outputWriter.print("\r\n");
+            }
+        }
         outputWriter.print("\r\n");
         outputWriter.flush();
     }
@@ -191,10 +232,10 @@ public class HttpResponse implements HttpServletResponse {
     @Override
     public void addHeader(String name, String value) {
         headers.put(name, value);
-        if (name.toLowerCase() == DefaultHeaders.CONTENT_LENGTH_NAME) {
+        if (name.equalsIgnoreCase(DefaultHeaders.CONTENT_LENGTH_NAME)) {
             setContentLength(Integer.parseInt(value));
         }
-        if (name.toLowerCase() == DefaultHeaders.CONTENT_TYPE_NAME) {
+        if (name.equalsIgnoreCase(DefaultHeaders.CONTENT_TYPE_NAME)) {
             setContentType(value);
         }
     }
@@ -241,7 +282,9 @@ public class HttpResponse implements HttpServletResponse {
 
     @Override
     public void addCookie(Cookie cookie) {
-
+        synchronized (cookies) {
+            cookies.add(cookie);
+        }
     }
 
     @Override
@@ -294,6 +337,7 @@ public class HttpResponse implements HttpServletResponse {
 
     }
 
+    @Override
     public void setHeader(String name, String value) {
         headers.put(name, value);
         if (name.equalsIgnoreCase(DefaultHeaders.CONTENT_LENGTH_NAME)) {

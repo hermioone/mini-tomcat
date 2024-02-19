@@ -4,10 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import javax.servlet.http.HttpSession;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.net.URLStreamHandler;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
@@ -33,6 +37,9 @@ public class HttpConnector implements Runnable {
     //存放Processor的池子
     final Deque<HttpProcessor> processors = new ArrayDeque<>();
 
+    //一个全局的class loader
+    public static URLClassLoader loader = null;
+
     public void run() {
         ServerSocket serverSocket = null;
         int port = 8080;
@@ -42,7 +49,19 @@ public class HttpConnector implements Runnable {
             log.error(ExceptionUtils.getStackTrace(e));
             System.exit(1);
         }
-        // 初始化池子initialize processors pool
+        try {
+            //class loader初始化
+            URL[] urls = new URL[1];
+            URLStreamHandler streamHandler = null;
+            File classPath = new File(HttpServer.WEB_ROOT);
+            String repository = (new URL("file", null, classPath.getCanonicalPath() + File.separator)).toString() ;
+            urls[0] = new URL(null, repository, streamHandler);
+            loader = new URLClassLoader(urls);
+        }
+        catch (IOException e) {
+            System.out.println(e.toString() );
+        }
+        // initialize processors pool
         for (int i = 0; i < minProcessors; i++) {
             HttpProcessor initprocessor = new HttpProcessor(this);
             initprocessor.start();
@@ -53,13 +72,11 @@ public class HttpConnector implements Runnable {
             Socket socket = null;
             try {
                 socket = serverSocket.accept();
-                //对每一个socket，从池子中拿到一个processor
                 HttpProcessor processor = createProcessor();
                 if (processor == null) {
                     socket.close();
                     continue;
                 }
-                //分配给这个processor
                 processor.assign(socket);
                 // Close the socket
 //                socket.close();
@@ -103,6 +120,7 @@ public class HttpConnector implements Runnable {
 
     //sessions map存放session
     public static Map<String, HttpSession> sessions = new ConcurrentHashMap<>();
+
     //创建新的session
     public static Session createSession() {
         Session session = new Session();
@@ -113,6 +131,7 @@ public class HttpConnector implements Runnable {
         sessions.put(sessionId, session);
         return (session);
     }
+
     //以随机方式生成byte数组,形成sessionid
     protected static synchronized String generateSessionId() {
         Random random = new Random();
@@ -120,7 +139,7 @@ public class HttpConnector implements Runnable {
         random.setSeed(seed);
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
-        StringBuilder result = new StringBuilder();
+        StringBuilder result = new StringBuilder("tomcat-");
         for (int i = 0; i < bytes.length; i++) {
             byte b1 = (byte) ((bytes[i] & 0xf0) >> 4);
             byte b2 = (byte) (bytes[i] & 0x0f);

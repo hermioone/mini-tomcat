@@ -5,11 +5,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.text.StrSubstitutor;
 
 import javax.servlet.Servlet;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.net.URLStreamHandler;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -26,34 +21,14 @@ public class ServletProcessor {
     public void process(HttpRequest request, HttpResponse response) {
         String uri = request.getUri();
         String servletName = uri.substring(uri.lastIndexOf("/") + 1);
-        URLClassLoader loader = null;
-        try {
-            // create a URLClassLoader
-            URL[] urls = new URL[1];
-            URLStreamHandler streamHandler = null;
-            //这个URLClassloader的工作目录设置在HttpServer.WEB_ROOT
-            File classPath = new File(HttpServer.WEB_ROOT);
-            String repository = (new URL("file", null, classPath.getCanonicalPath() + File.separator)).toString() ;
-            urls[0] = new URL(null, repository, streamHandler);
-            loader = new URLClassLoader(urls);
-        }
-        catch (IOException e) {
-            log.error(ExceptionUtils.getStackTrace(e));
-        }
         //response默认为UTF-8编码
         response.setCharacterEncoding("UTF-8");
         Class<?> servletClass = null;
         try {
-            servletClass = loader.loadClass(servletName);
+            servletClass = HttpConnector.loader.loadClass(servletName);
         }
         catch (ClassNotFoundException e) {
             log.error(ExceptionUtils.getStackTrace(e));
-        }
-        //回写头信息
-        try {
-            response.sendHeaders();
-        } catch (IOException e1) {
-            log.error(ExceptionUtils.getStackTrace(e1));
         }
         //创建servlet新实例，调用service()
         Servlet servlet = null;
@@ -61,6 +36,7 @@ public class ServletProcessor {
             servlet = (Servlet) servletClass.newInstance();
             HttpRequestFacade requestFacade = new HttpRequestFacade(request);
             HttpResponseFacade responseFacade = new HttpResponseFacade(response);
+            log.info("Call servlet: {}", servletName);
             servlet.service(requestFacade, responseFacade);
         }
         catch (Throwable e) {

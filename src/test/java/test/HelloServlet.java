@@ -1,26 +1,24 @@
 package test;
 
-import org.hermione.server.Request;
-import org.hermione.server.Response;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
-import java.util.Date;
 
-public class HelloServlet extends HttpServlet{
+public class HelloServlet extends HttpServlet {
+    static int count = 0;
     private static final long serialVersionUID = 1L;
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response)throws ServletException, IOException {
         System.out.println("Enter doGet()");
         System.out.println("parameter name : "+request.getParameter("name"));
+        HelloServlet.count++;
+        System.out.println("::::::::call count ::::::::: " + HelloServlet.count);
+        if (HelloServlet.count > 2) {
+            response.addHeader("Connection", "close");
+        }
         HttpSession session = request.getSession(true);
         String user = (String) session.getAttribute("user");
         System.out.println("get user from session : " + user);
@@ -32,7 +30,7 @@ public class HelloServlet extends HttpServlet{
                 "<html>\n" +
                 "<head><meta charset=\"utf-8\"><title>Test</title></head>\n"+
                 "<body bgcolor=\"#f0f0f0\">\n" +
-                "<h1 align=\"center\">" + "Hello Get: " + new Date() + "</h1>\n";
+                "<h1 align=\"center\">" + "Test 你好" + "</h1>\n";
         System.out.println(doc);
         response.getWriter().println(doc);
     }
@@ -44,7 +42,7 @@ public class HelloServlet extends HttpServlet{
                 "<html>\n" +
                 "<head><meta charset=\"utf-8\"><title>Test</title></head>\n"+
                 "<body bgcolor=\"#f0f0f0\">\n" +
-                "<h1 align=\"center\">" + "Hello Post: " + new Date() + "</h1>\n";
+                "<h1 align=\"center\">" + "Test 你好" + "</h1>\n";
         System.out.println(doc);
         response.getWriter().println(doc);
     }
