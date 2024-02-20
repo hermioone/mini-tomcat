@@ -1,4 +1,4 @@
-package org.hermione.server;
+package org.hermione.minit.connector.http;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -52,12 +52,12 @@ public class HttpProcessor implements Runnable {
             keepAlive = true;
             while (keepAlive) {
                 // create Request object and parse
-                HttpRequest request = new HttpRequest(input);
+                HttpRequestImpl request = new HttpRequestImpl(input);
                 request.parse(socket);
                 // handle session
                 request.getSession(true);
                 // create Response object
-                HttpResponse response = new HttpResponse(output);
+                HttpResponseImpl response = new HttpResponseImpl(output);
                 response.setRequest(request);
 //               response.sendStaticResource();
                 request.setResponse(response);
@@ -94,7 +94,7 @@ public class HttpProcessor implements Runnable {
         }
     }
 
-    private void finishResponse(HttpResponse response) {
+    private void finishResponse(HttpResponseImpl response) {
         response.finishResponse();
     }
 

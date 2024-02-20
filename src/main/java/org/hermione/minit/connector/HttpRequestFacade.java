@@ -1,4 +1,4 @@
-package org.hermione.server;
+package org.hermione.minit.connector;
 
 /**
  * 因为 HttpRequest 和 HttpResponse 会被传入 Servlet 中，如果我们在它们的实现类中封装了很多内部方法，这些内部方法也会暴露给用户
@@ -30,7 +30,7 @@ import java.util.Map;
 
 public class HttpRequestFacade implements HttpServletRequest {
     private final HttpServletRequest request;
-    public HttpRequestFacade(HttpRequest request) {
+    public HttpRequestFacade(HttpServletRequest request) {
         this.request = request;
     }
     /* implementation of the HttpServletRequest*/

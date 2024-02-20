@@ -1,13 +1,13 @@
-package org.hermione.server;
+package org.hermione.minit.session;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionContext;
 import java.util.Enumeration;
 
-public class SessionFacade implements HttpSession {
+public class StandardSessionFacade implements HttpSession {
     private final HttpSession session;
-    public SessionFacade(HttpSession session) {
+    public StandardSessionFacade(HttpSession session) {
         this.session = session;
     }
     @Override

@@ -1,4 +1,4 @@
-package org.hermione.server;
+package org.hermione.minit.test;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;

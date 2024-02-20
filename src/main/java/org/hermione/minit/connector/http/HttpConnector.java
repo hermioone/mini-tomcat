@@ -1,19 +1,17 @@
-package org.hermione.server;
+package org.hermione.minit.connector.http;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hermione.minit.core.StandardContext;
+import org.hermione.minit.session.StandardSession;
 
 import javax.servlet.http.HttpSession;
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.net.URLStreamHandler;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
@@ -42,7 +40,7 @@ public class HttpConnector implements Runnable {
     //这是与connector相关联的container
     @Getter
     @Setter
-    ServletContainer container = null;
+    StandardContext container = null;
 
     public void run() {
         ServerSocket serverSocket = null;
@@ -114,8 +112,8 @@ public class HttpConnector implements Runnable {
     public static Map<String, HttpSession> sessions = new ConcurrentHashMap<>();
 
     //创建新的session
-    public static Session createSession() {
-        Session session = new Session();
+    public static StandardSession createSession() {
+        StandardSession session = new StandardSession();
         session.setValid(true);
         session.setCreationTime(System.currentTimeMillis());
         String sessionId = generateSessionId();

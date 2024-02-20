@@ -1,9 +1,13 @@
-package org.hermione.server;
+package org.hermione.minit.core;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hermione.minit.Container;
+import org.hermione.minit.Wrapper;
+import org.hermione.minit.core.ContainerBase;
+import org.hermione.minit.core.StandardContext;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -12,20 +16,16 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Objects;
 
+// 原来的 ServletWrapper，主要提供 Servlet 生命周期管理
 @SuppressWarnings({"UnusedReturnValue", "deprecation"})
 @Slf4j
-public class ServletWrapper {
+public class StandardWrapper extends ContainerBase implements Wrapper {
     private Servlet instance = null;
     @Getter
     @Setter
     private String servletClass;
-    private ClassLoader loader;
-    private String name;
-    @Getter
-    @Setter
-    protected ServletContainer parent = null;
 
-    public ServletWrapper(String servletClass, ServletContainer parent) {
+    public StandardWrapper(String servletClass, StandardContext parent) {
         this.parent = parent;
         this.servletClass = servletClass;
         try {
@@ -35,10 +35,9 @@ public class ServletWrapper {
         }
     }
 
-    public ClassLoader getLoader() {
-        if (loader != null)
-            return loader;
-        return parent.getLoader();
+    @Override
+    public String getInfo() {
+        return "Mini Servlet Wrapper, version 0.1";
     }
 
 
@@ -46,7 +45,7 @@ public class ServletWrapper {
         return this.instance;
     }
 
-    public Servlet loadServlet() throws ServletException {
+    private Servlet loadServlet() throws ServletException {
         if (instance != null)
             return instance;
         Servlet servlet = null;
@@ -82,5 +81,63 @@ public class ServletWrapper {
         if (instance != null) {
             instance.service(request, response);
         }
+    }
+
+    @Override
+    public void addChild(Container child) {
+    }
+
+    @Override
+    public Container findChild(String name) {
+        return null;
+    }
+
+    @Override
+    public Container[] findChildren() {
+        return null;
+    }
+
+    @Override
+    public void removeChild(Container child) {
+    }
+
+    @Override
+    public int getLoadOnStartup() {
+        return 0;
+    }
+
+    @Override
+    public void setLoadOnStartup(int value) {
+
+    }
+
+    @Override
+    public void addInitParameter(String name, String value) {
+
+    }
+
+    @Override
+    public Servlet allocate() throws ServletException {
+        return null;
+    }
+
+    @Override
+    public String findInitParameter(String name) {
+        return null;
+    }
+
+    @Override
+    public String[] findInitParameters() {
+        return new String[0];
+    }
+
+    @Override
+    public void load() throws ServletException {
+
+    }
+
+    @Override
+    public void removeInitParameter(String name) {
+
     }
 }

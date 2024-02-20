@@ -1,4 +1,4 @@
-package org.hermione.server;
+package org.hermione.minit.server;
 
 import java.io.OutputStream;
 import javax.servlet.ServletOutputStream;

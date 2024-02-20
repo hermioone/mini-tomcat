@@ -1,5 +1,8 @@
-package org.hermione.server;
+package org.hermione.minit.connector.http;
 
+/**
+ * 封装了对 http request 首行的解析结果，即 GET /hello.txt HTTP/1.1
+ */
 public class HttpRequestLine {
     public static final int INITIAL_METHOD_SIZE = 8;
     public static final int INITIAL_URI_SIZE = 128;

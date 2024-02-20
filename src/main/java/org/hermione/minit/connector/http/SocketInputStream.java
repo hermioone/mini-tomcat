@@ -1,4 +1,7 @@
-package org.hermione.server;
+package org.hermione.minit.connector.http;
+
+import org.hermione.minit.connector.http.HttpHeader;
+import org.hermione.minit.connector.http.HttpRequestLine;
 
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;

@@ -1,4 +1,4 @@
-package org.hermione.server;
+package org.hermione.minit.server;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;

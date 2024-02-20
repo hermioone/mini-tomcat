@@ -1,4 +1,4 @@
-package org.hermione.server;
+package org.hermione.minit.connector;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -10,7 +10,7 @@ import java.util.Locale;
 
 public class HttpResponseFacade implements HttpServletResponse {
     private final HttpServletResponse response;
-    public HttpResponseFacade(HttpResponse response) {
+    public HttpResponseFacade(HttpServletResponse response) {
         this.response = response;
     }
     public void addDateHeader(String name, long value) {

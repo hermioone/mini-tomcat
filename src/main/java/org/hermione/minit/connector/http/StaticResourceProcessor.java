@@ -1,6 +1,9 @@
-package org.hermione.server;
+package org.hermione.minit.connector.http;
 
 import org.apache.commons.lang3.text.StrSubstitutor;
+import org.hermione.minit.connector.http.HttpRequestImpl;
+import org.hermione.minit.connector.http.HttpResponseImpl;
+import org.hermione.minit.startup.Bootstrap;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,13 +19,13 @@ public class StaticResourceProcessor {
     private static final int BUFFER_SIZE = 1024;
 
     //处理过程很简单，先将响应头写入输出流，然后从文件中读取内容写入输出流
-    public void process(HttpRequest request, HttpResponse response) throws IOException {
+    public void process(HttpRequestImpl request, HttpResponseImpl response) throws IOException {
         byte[] bytes = new byte[BUFFER_SIZE];
         FileInputStream fis = null;
         OutputStream output = null;
         try {
             output = response.getOutput();
-            File file = new File(HttpServer.WEB_ROOT, request.getUri());
+            File file = new File(Bootstrap.WEB_ROOT, request.getUri());
             if (file.exists()) {
                 //拼响应头
                 String head = composeResponseHead(file);

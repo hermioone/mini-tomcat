@@ -1,4 +1,4 @@
-package org.hermione.server;
+package org.hermione.minit.util;
 
 import javax.servlet.http.Cookie;
 

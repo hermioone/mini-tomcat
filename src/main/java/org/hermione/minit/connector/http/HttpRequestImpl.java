@@ -1,8 +1,9 @@
-package org.hermione.server;
+package org.hermione.minit.connector.http;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hermione.minit.session.StandardSessionFacade;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -37,9 +38,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("IfCanBeSwitch")
 @Slf4j
-public class HttpRequest implements HttpServletRequest {
+public class HttpRequestImpl implements HttpServletRequest {
 
-    private HttpResponse response;
+    private HttpResponseImpl response;
     private InputStream input;
     private SocketInputStream sis;
     @Getter
@@ -56,14 +57,14 @@ public class HttpRequest implements HttpServletRequest {
     Cookie[] cookies;
     HttpSession session;
     String sessionid;
-    SessionFacade sessionFacade;
+    StandardSessionFacade sessionFacade;
 
-    public HttpRequest(InputStream input) {
+    public HttpRequestImpl(InputStream input) {
         this.input = input;
         this.sis = new SocketInputStream(this.input, 2048);
     }
 
-    public HttpRequest() {
+    public HttpRequestImpl() {
     }
 
     public void setStream(InputStream input) {
@@ -71,7 +72,7 @@ public class HttpRequest implements HttpServletRequest {
         this.sis = new SocketInputStream(this.input, 2048);
     }
 
-    public void setResponse(HttpResponse response) {
+    public void setResponse(HttpResponseImpl response) {
         this.response = response;
     }
 
@@ -620,18 +621,18 @@ public class HttpRequest implements HttpServletRequest {
         if (sessionid != null) {
             session = HttpConnector.sessions.get(sessionid);
             if (session != null) {
-                sessionFacade = new SessionFacade(session);
+                sessionFacade = new StandardSessionFacade(session);
                 return sessionFacade;
             } else {
                 session = HttpConnector.createSession();
                 log.info("---------- Create new session: {}----------", session.getId());
-                sessionFacade = new SessionFacade(session);
+                sessionFacade = new StandardSessionFacade(session);
                 return sessionFacade;
             }
         } else {
             log.info("Create new session.");
             session = HttpConnector.createSession();
-            sessionFacade = new SessionFacade(session);
+            sessionFacade = new StandardSessionFacade(session);
             sessionid = session.getId();
             return sessionFacade;
         }

@@ -1,8 +1,11 @@
-package org.hermione.server;
+package org.hermione.minit.connector.http;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hermione.minit.connector.http.DefaultHeaders;
+import org.hermione.minit.connector.http.HttpRequestImpl;
+import org.hermione.minit.util.CookieTools;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -14,14 +17,13 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class HttpResponse implements HttpServletResponse {
-    HttpRequest request;
+public class HttpResponseImpl implements HttpServletResponse {
+    HttpRequestImpl request;
     @Getter
     OutputStream output;
     PrintWriter writer;
@@ -40,11 +42,11 @@ public class HttpResponse implements HttpServletResponse {
     String message = getStatusMessage(HttpServletResponse.SC_OK);
     int status = HttpServletResponse.SC_OK;
 
-    public HttpResponse(OutputStream output) {
+    public HttpResponseImpl(OutputStream output) {
         this.output = output;
     }
 
-    public HttpResponse() {
+    public HttpResponseImpl() {
     }
 
     public void setStream(OutputStream output) {
@@ -60,7 +62,7 @@ public class HttpResponse implements HttpServletResponse {
         }
     }
 
-    public void setRequest(HttpRequest request) {
+    public void setRequest(HttpRequestImpl request) {
         this.request = request;
     }
 
