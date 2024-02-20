@@ -8,6 +8,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.Locale;
 
+@Deprecated
 public class Response implements ServletResponse{
     Request request;
     OutputStream output;

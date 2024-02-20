@@ -1,5 +1,7 @@
 package org.hermione.server;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -37,8 +39,10 @@ public class HttpConnector implements Runnable {
     //存放Processor的池子
     final Deque<HttpProcessor> processors = new ArrayDeque<>();
 
-    //一个全局的class loader
-    public static URLClassLoader loader = null;
+    //这是与connector相关联的container
+    @Getter
+    @Setter
+    ServletContainer container = null;
 
     public void run() {
         ServerSocket serverSocket = null;
@@ -48,18 +52,6 @@ public class HttpConnector implements Runnable {
         } catch (IOException e) {
             log.error(ExceptionUtils.getStackTrace(e));
             System.exit(1);
-        }
-        try {
-            //class loader初始化
-            URL[] urls = new URL[1];
-            URLStreamHandler streamHandler = null;
-            File classPath = new File(HttpServer.WEB_ROOT);
-            String repository = (new URL("file", null, classPath.getCanonicalPath() + File.separator)).toString() ;
-            urls[0] = new URL(null, repository, streamHandler);
-            loader = new URLClassLoader(urls);
-        }
-        catch (IOException e) {
-            System.out.println(e.toString() );
         }
         // initialize processors pool
         for (int i = 0; i < minProcessors; i++) {
@@ -140,9 +132,9 @@ public class HttpConnector implements Runnable {
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
         StringBuilder result = new StringBuilder("tomcat-");
-        for (int i = 0; i < bytes.length; i++) {
-            byte b1 = (byte) ((bytes[i] & 0xf0) >> 4);
-            byte b2 = (byte) (bytes[i] & 0x0f);
+        for (byte aByte : bytes) {
+            byte b1 = (byte) ((aByte & 0xf0) >> 4);
+            byte b2 = (byte) (aByte & 0x0f);
             if (b1 < 10) result.append((char) ('0' + b1));
             else result.append((char) ('A' + (b1 - 10)));
             if (b2 < 10) result.append((char) ('0' + b2));

@@ -19,6 +19,7 @@ import java.util.Locale;
 import java.util.Map;
 
 @Slf4j
+@Deprecated
 public class Request implements ServletRequest {
     private final InputStream input;
     private String uri;
