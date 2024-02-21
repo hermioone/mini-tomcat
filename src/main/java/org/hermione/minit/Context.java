@@ -1,6 +1,7 @@
 package org.hermione.minit;
 
-import org.hermione.minit.core.StandardContext;
+
+import javax.servlet.ServletContext;
 
 public interface Context extends Container {
     public static final String RELOAD_EVENT = "reload";
@@ -13,7 +14,7 @@ public interface Context extends Container {
 
     public void setPath(String path);
 
-    public StandardContext getServletContext();
+    public ServletContext getServletContext();
 
     public int getSessionTimeout();
 

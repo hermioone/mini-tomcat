@@ -1,10 +1,13 @@
 package org.hermione.minit.session;
 
 import org.hermione.minit.Session;
+import org.hermione.minit.SessionEvent;
+import org.hermione.minit.SessionListener;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionContext;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
@@ -144,10 +147,39 @@ public class StandardSession implements HttpSession, Session {
 
     public void setId(String sessionId) {
         this.sessionid = sessionId;
+        fireSessionEvent(Session.SESSION_CREATED_EVENT, null);
     }
 
     @Override
     public String getInfo() {
         return null;
     }
+
+
+    /* ----------------------------- 新增了对 SessionListener 的处理 ----------------------------- */
+
+    private final transient ArrayList<SessionListener> listeners = new ArrayList<>();
+    public void addSessionListener(SessionListener listener) {
+        synchronized (listeners) {
+            listeners.add(listener);
+        }
+    }
+    public void removeSessionListener(SessionListener listener) {
+        synchronized (listeners) {
+            listeners.remove(listener);
+        }
+    }
+    public void fireSessionEvent(String type, Object data) {
+        if (listeners.isEmpty())
+            return;
+        SessionEvent event = new SessionEvent(this, type, data);
+        SessionListener[] list = new SessionListener[0];
+        synchronized (listeners) {
+            list = listeners.toArray(list);
+        }
+        for (SessionListener sessionListener : list) {
+            sessionListener.sessionEvent(event);
+        }
+    }
+
 }
