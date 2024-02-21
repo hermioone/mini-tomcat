@@ -5,14 +5,13 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hermione.minit.Container;
+import org.hermione.minit.Pipeline;
+import org.hermione.minit.Request;
+import org.hermione.minit.Response;
 import org.hermione.minit.Wrapper;
-import org.hermione.minit.core.ContainerBase;
-import org.hermione.minit.core.StandardContext;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -26,6 +25,10 @@ public class StandardWrapper extends ContainerBase implements Wrapper {
     private String servletClass;
 
     public StandardWrapper(String servletClass, StandardContext parent) {
+
+        super("StandardWrapper");
+        Pipeline pipeline = getPipeline();
+        pipeline.setBasic(new StandardWrapperValve(pipeline));
         this.parent = parent;
         this.servletClass = servletClass;
         try {
@@ -76,11 +79,10 @@ public class StandardWrapper extends ContainerBase implements Wrapper {
         return servlet;
     }
 
-    public void invoke(HttpServletRequest request, HttpServletResponse response)
+    public void invoke(Request request, Response response)
             throws IOException, ServletException {
-        if (instance != null) {
-            instance.service(request, response);
-        }
+        log.info(getName() + " invoke()");
+        super.invoke(request, response);
     }
 
     @Override

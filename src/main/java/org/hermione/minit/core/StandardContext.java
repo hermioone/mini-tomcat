@@ -2,18 +2,17 @@ package org.hermione.minit.core;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hermione.minit.Container;
 import org.hermione.minit.Context;
+import org.hermione.minit.Pipeline;
+import org.hermione.minit.Request;
+import org.hermione.minit.Response;
 import org.hermione.minit.Wrapper;
 import org.hermione.minit.connector.http.HttpConnector;
-import org.hermione.minit.connector.HttpRequestFacade;
-import org.hermione.minit.connector.http.HttpRequestImpl;
-import org.hermione.minit.connector.HttpResponseFacade;
 import org.hermione.minit.startup.Bootstrap;
+import org.hermione.minit.valves.AuthorityCheckValve;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -22,8 +21,8 @@ import java.net.URLStreamHandler;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-//Servlet容器，原来的 ServletContainer
 @Slf4j
+//Servlet容器，原来的 ServletContainer
 public class StandardContext extends ContainerBase implements Context {
     @Getter
     HttpConnector connector = null;
@@ -34,6 +33,10 @@ public class StandardContext extends ContainerBase implements Context {
     Map<String, StandardWrapper> servletInstanceMap = new ConcurrentHashMap<>();//servletName - servlet
 
     public StandardContext() {
+        super("StandardContext");
+        Pipeline pipeline = getPipeline();
+        pipeline.addValve(new AuthorityCheckValve(pipeline));
+        pipeline.setBasic(new StandardContextValve(pipeline));
         try {
             // create a URLClassLoader
             URL[] urls = new URL[1];
@@ -43,8 +46,19 @@ public class StandardContext extends ContainerBase implements Context {
             urls[0] = new URL(null, repository, streamHandler);
             loader = new URLClassLoader(urls);
         } catch (IOException e) {
-            System.out.println(e.toString());
+            log("Fail to init StandardContext.", e);
         }
+        log("Container created.");
+    }
+
+    public Wrapper getWrapper(String name) {
+        StandardWrapper servletWrapper = servletInstanceMap.get(name);
+        if (servletWrapper == null) {
+            servletWrapper = new StandardWrapper(name, this);
+            this.servletClsMap.put(name, name);
+            this.servletInstanceMap.put(name, servletWrapper);
+        }
+        return servletWrapper;
     }
 
     public String getInfo() {
@@ -59,49 +73,15 @@ public class StandardContext extends ContainerBase implements Context {
         this.connector = connector;
     }
 
-    public String getName() {
-        return null;
-    }
-
-    public void setName(String name) {
-    }
-
     //invoke方法用于从map中找到相关的servlet，然后调用
     @Override
-    public void invoke(HttpServletRequest request, HttpServletResponse response)
+    public void invoke(Request request, Response response)
             throws IOException, ServletException {
-        StandardWrapper servletWrapper = null;
-        String uri = ((HttpRequestImpl)request).getUri();
-        String servletName = uri.substring(uri.lastIndexOf("/") + 1);
-        //从容器中获取servlet wrapper
-        servletWrapper = servletInstanceMap.get(servletName);
-        if ( servletWrapper == null) {
-            servletWrapper = new StandardWrapper(servletName,this);
-            //servletWrapper.setParent(this);
-            this.servletClsMap.put(servletName, servletName);
-            this.servletInstanceMap.put(servletName, servletWrapper);
-        }
-        //将调用传递到下层容器即wrapper中
-        try {
-            HttpServletRequest requestFacade = new HttpRequestFacade(request);
-            HttpServletResponse responseFacade = new HttpResponseFacade(response);
-            System.out.println("Call service()");
-            servletWrapper.invoke(requestFacade, responseFacade);
-        }
-        catch (Throwable e) {
-            log.error(ExceptionUtils.getStackTrace(e));
-        }
+        log.info(getName() + " invoke()");
+        super.invoke(request, response);
     }
 
-    @Override
-    public String getDisplayName() {
-        return null;
-    }
 
-    @Override
-    public void setDisplayName(String displayName) {
-
-    }
 
     @Override
     public String getDocBase() {

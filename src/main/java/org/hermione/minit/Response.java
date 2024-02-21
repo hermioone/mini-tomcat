@@ -37,7 +37,7 @@ public interface Response {
 
     public void finishResponse() throws IOException;
 
-    public int getContentLength();
+    public long getContentLength();
 
     public String getContentType();
 

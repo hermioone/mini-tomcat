@@ -5,6 +5,8 @@ package org.hermione.minit.connector;
  * 因此使用门面设计模式来解决这个问题
  */
 
+import org.hermione.minit.connector.http.HttpRequestImpl;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -30,7 +32,7 @@ import java.util.Map;
 
 public class HttpRequestFacade implements HttpServletRequest {
     private final HttpServletRequest request;
-    public HttpRequestFacade(HttpServletRequest request) {
+    public HttpRequestFacade(HttpRequestImpl request) {
         this.request = request;
     }
     /* implementation of the HttpServletRequest*/

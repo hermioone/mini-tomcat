@@ -5,10 +5,6 @@ import org.hermione.minit.core.StandardContext;
 public interface Context extends Container {
     public static final String RELOAD_EVENT = "reload";
 
-    public String getDisplayName();
-
-    public void setDisplayName(String displayName);
-
     public String getDocBase();
 
     public void setDocBase(String docBase);

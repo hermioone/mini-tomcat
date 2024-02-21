@@ -3,11 +3,16 @@ package org.hermione.minit.connector.http;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hermione.minit.Connector;
+import org.hermione.minit.Context;
+import org.hermione.minit.Request;
+import org.hermione.minit.Response;
 import org.hermione.minit.connector.http.DefaultHeaders;
 import org.hermione.minit.connector.http.HttpRequestImpl;
 import org.hermione.minit.util.CookieTools;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -22,7 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class HttpResponseImpl implements HttpServletResponse {
+public class HttpResponseImpl implements HttpServletResponse, Response {
     HttpRequestImpl request;
     @Getter
     OutputStream output;
@@ -49,8 +54,73 @@ public class HttpResponseImpl implements HttpServletResponse {
     public HttpResponseImpl() {
     }
 
+    @Override
+    public Connector getConnector() {
+        return null;
+    }
+
+    @Override
+    public void setConnector(Connector connector) {
+
+    }
+
+    @Override
+    public int getContentCount() {
+        return 0;
+    }
+
+    @Override
+    public Context getContext() {
+        return null;
+    }
+
+    @Override
+    public void setContext(Context context) {
+
+    }
+
+    @Override
+    public String getInfo() {
+        return null;
+    }
+
+    @Override
+    public Request getRequest() {
+        return null;
+    }
+
+    @Override
+    public void setRequest(Request request) {
+
+    }
+
+    @Override
+    public ServletResponse getResponse() {
+        return null;
+    }
+
+    @Override
+    public OutputStream getStream() {
+        return null;
+    }
+
     public void setStream(OutputStream output) {
         this.output = output;
+    }
+
+    @Override
+    public void setError() {
+
+    }
+
+    @Override
+    public boolean isError() {
+        return false;
+    }
+
+    @Override
+    public ServletOutputStream createOutputStream() throws IOException {
+        return null;
     }
 
     //提供这个方法完成输出
@@ -161,6 +231,16 @@ public class HttpResponseImpl implements HttpServletResponse {
     }
 
     @Override
+    public PrintWriter getReporter() {
+        return null;
+    }
+
+    @Override
+    public void recycle() {
+
+    }
+
+    @Override
     public ServletOutputStream getOutputStream() throws IOException {
         return null;
     }
@@ -208,6 +288,11 @@ public class HttpResponseImpl implements HttpServletResponse {
 
     @Override
     public void resetBuffer() {
+
+    }
+
+    @Override
+    public void sendAcknowledgement() throws IOException {
 
     }
 
