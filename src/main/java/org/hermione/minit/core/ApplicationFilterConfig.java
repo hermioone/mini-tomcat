@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
 
+@SuppressWarnings("deprecation")
 final class ApplicationFilterConfig implements FilterConfig {
     public ApplicationFilterConfig(Context context, FilterDef filterDef)
             throws ClassCastException, ClassNotFoundException,
@@ -50,13 +51,11 @@ final class ApplicationFilterConfig implements FilterConfig {
     }
 
     public String toString() {
-        StringBuffer sb = new StringBuffer("ApplicationFilterConfig[");
-        sb.append("name=");
-        sb.append(filterDef.getFilterName());
-        sb.append(", filterClass=");
-        sb.append(filterDef.getFilterClass());
-        sb.append("]");
-        return (sb.toString());
+        return ("ApplicationFilterConfig[" + "name=" +
+                filterDef.getFilterName() +
+                ", filterClass=" +
+                filterDef.getFilterClass() +
+                "]");
     }
 
     Filter getFilter() throws ClassCastException, ClassNotFoundException,
@@ -66,12 +65,11 @@ final class ApplicationFilterConfig implements FilterConfig {
             return (this.filter);
         // 确定我们将使用的类加载器
         String filterClass = filterDef.getFilterClass();
-        ClassLoader classLoader = null;
-        classLoader = context.getLoader();
+        WebappClassLoader classLoader = context.getLoader();
         ClassLoader oldCtxClassLoader =
                 Thread.currentThread().getContextClassLoader();
         // 实例化这个过滤器的新实例并返回
-        Class clazz = classLoader.loadClass(filterClass);
+        Class<?> clazz = classLoader.getClassLoader().loadClass(filterClass);
         this.filter = (Filter) clazz.newInstance();
         filter.init(this);
         return (this.filter);

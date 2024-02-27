@@ -1,6 +1,7 @@
 package org.hermione.minit.core;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.hermione.minit.Container;
 import org.hermione.minit.Logger;
 import org.hermione.minit.Pipeline;
@@ -19,11 +20,14 @@ public abstract class ContainerBase implements Container, Pipeline {
     //子容器
     protected final Map<String, Container> children = new ConcurrentHashMap<>();
     //类加载器
-    protected ClassLoader loader = null;
+    protected WebappClassLoader loader = null;
     @Getter
     protected String name = null;
     //父容器
     protected Container parent = null;
+
+    protected String path;
+    protected String docbase;
 
     protected ContainerBase(String name) {
         this.name = name;
@@ -33,7 +37,7 @@ public abstract class ContainerBase implements Container, Pipeline {
     public abstract String getInfo();
 
     @Override
-    public ClassLoader getLoader() {
+    public WebappClassLoader getLoader() {
         if (loader != null)
             return (loader);
         if (parent != null)
@@ -42,11 +46,12 @@ public abstract class ContainerBase implements Container, Pipeline {
     }
 
     @Override
-    public synchronized void setLoader(ClassLoader loader) {
-        ClassLoader oldLoader = this.loader;
-        if (oldLoader == loader) {
+    public synchronized void setLoader(WebappClassLoader loader) {
+        loader.setDocbase(docbase);
+        loader.setContainer(this);
+        WebappClassLoader oldLoader = this.loader;
+        if (oldLoader == loader)
             return;
-        }
         this.loader = loader;
     }
 

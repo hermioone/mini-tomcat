@@ -41,11 +41,23 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@SuppressWarnings("IfCanBeSwitch")
+@SuppressWarnings({"IfCanBeSwitch", "JavadocLinkAsPlainText"})
 @Slf4j
 public class HttpRequestImpl implements HttpServletRequest, Request {
+
     private InputStream input;
     private SocketInputStream sis;
+    /**
+     * 比如 http://localhost:8080/app1/servlet/test.TestServlet，
+     * docbase 为 app1
+     */
+    @Getter
+    private String docbase;
+    /**
+     * 比如 http://localhost:8080/app1/servlet/test.TestServlet，
+     * uri 为 servlet/app1.TestServlet
+     */
+    @Getter
     private String uri;
     private String queryString;
     InetAddress address;
@@ -72,6 +84,7 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
         this.input = input;
         this.sis = new SocketInputStream(this.input, 2048);
     }
+
     public void setResponse(HttpResponseImpl response) {
         this.response = response;
     }
@@ -82,10 +95,8 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
             this.sis.readRequestLine(requestLine);
             parseRequestLine();
             parseHeaders();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ServletException e) {
-            e.printStackTrace();
+        } catch (IOException | ServletException e) {
+            log.error(ExceptionUtils.getStackTrace(e));
         }
 
     }
@@ -98,8 +109,13 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
             String tmp = ";" + DefaultHeaders.JSESSIONID_NAME + "=";
             int semicolon = uri.indexOf(tmp);
             if (semicolon >= 0) {
-                sessionid = uri.substring(semicolon+tmp.length());
+                sessionid = uri.substring(semicolon + tmp.length());
                 uri = uri.substring(0, semicolon);
+            }
+            int contextslash = uri.indexOf("/", 1);
+            if (contextslash != -1) {
+                this.docbase = uri.substring(1, contextslash);
+                uri = uri.substring(contextslash);
             }
         } else {
             queryString = null;
@@ -107,8 +123,13 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
             String tmp = ";" + DefaultHeaders.JSESSIONID_NAME + "=";
             int semicolon = uri.indexOf(tmp);
             if (semicolon >= 0) {
-                sessionid = uri.substring(semicolon+tmp.length());
+                sessionid = uri.substring(semicolon + tmp.length());
                 uri = uri.substring(0, semicolon);
+            }
+            int contextslash = uri.indexOf("/", 1);
+            if (contextslash != -1) {
+                this.docbase = uri.substring(1, contextslash);
+                uri = uri.substring(contextslash);
             }
         }
     }
@@ -129,7 +150,7 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
                     throw new ServletException("httpProcessor.parseHeaders.colon");
                 }
             }
-            String name = new String(header.name,0,header.nameEnd);
+            String name = new String(header.name, 0, header.nameEnd);
             String value = new String(header.value, 0, header.valueEnd);
             name = name.toLowerCase();
             // Set the corresponding request headers
@@ -150,25 +171,23 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
                 headers.put(name, value);
             } else if (name.equals(DefaultHeaders.COOKIE_NAME)) {
                 headers.put(name, value);
-                Cookie[] cookiearr = parseCookieHeader(value);
-                this.cookies = cookiearr;
-                for (int i = 0; i < cookies.length; i++) {
-                    if (cookies[i].getName().equals("jsessionid")) {
-                        this.sessionid = cookies[i].getValue();
+                this.cookies = parseCookieHeader(value);
+                for (Cookie cookie : cookies) {
+                    if (cookie.getName().equals("jsessionid")) {
+                        this.sessionid = cookie.getValue();
                     }
                 }
-            }
-            else {
+            } else {
                 headers.put(name, value);
             }
         }
     }
 
-    public  Cookie[] parseCookieHeader(String header) {
-        if ((header == null) || (header.length() < 1) )
+    public Cookie[] parseCookieHeader(String header) {
+        if ((header == null) || (header.isEmpty()))
             return (new Cookie[0]);
         ArrayList<Cookie> cookieal = new ArrayList<>();
-        while (header.length() > 0) {
+        while (!header.isEmpty()) {
             int semicolon = header.indexOf(';');
             if (semicolon < 0)
                 semicolon = header.length();
@@ -185,13 +204,13 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
                 int equals = token.indexOf('=');
                 if (equals > 0) {
                     String name = token.substring(0, equals).trim();
-                    String value = token.substring(equals+1).trim();
+                    String value = token.substring(equals + 1).trim();
                     cookieal.add(new Cookie(name, value));
                 }
-            } catch (Throwable e) {
+            } catch (Throwable ignored) {
             }
         }
-        return ((Cookie[]) cookieal.toArray (new Cookie [cookieal.size()]));
+        return ((Cookie[]) cookieal.toArray(new Cookie[0]));
     }
 
     protected void parseParameters() {
@@ -201,14 +220,14 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
             encoding = "ISO-8859-1";
         }
         String qString = getQueryString();
-        System.out.println("getQueryString:"+qString);
+        System.out.println("getQueryString:" + qString);
         if (qString != null) {
             byte[] bytes = new byte[qString.length()];
             try {
-                bytes=qString.getBytes(encoding);
+                bytes = qString.getBytes(encoding);
                 parseParameters(this.parameters, bytes, encoding);
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();;
+                log.error(ExceptionUtils.getStackTrace(e));
             }
         }
         String contentType = getContentType();
@@ -217,8 +236,7 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
         int semicolon = contentType.indexOf(';');
         if (semicolon >= 0) {
             contentType = contentType.substring(0, semicolon).trim();
-        }
-        else {
+        } else {
             contentType = contentType.trim();
         }
         if ("POST".equals(getMethod()) && (getContentLength() > 0)
@@ -226,7 +244,7 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
             try {
                 int max = getContentLength();
                 int len = 0;
-                byte buf[] = new byte[getContentLength()];
+                byte[] buf = new byte[getContentLength()];
                 ServletInputStream is = getInputStream();
                 while (len < max) {
                     int next = is.read(buf, len, max - len);
@@ -240,31 +258,29 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
                     throw new RuntimeException("Content length mismatch");
                 }
                 parseParameters(this.parameters, buf, encoding);
-            }
-            catch (UnsupportedEncodingException ue) {
-            }
-            catch (IOException e) {
+            } catch (UnsupportedEncodingException ignored) {
+            } catch (IOException e) {
                 throw new RuntimeException("Content read fail");
             }
         }
     }
 
     private byte convertHexDigit(byte b) {
-        if ((b >= '0') && (b <= '9')) return (byte)(b - '0');
-        if ((b >= 'a') && (b <= 'f')) return (byte)(b - 'a' + 10);
-        if ((b >= 'A') && (b <= 'F')) return (byte)(b - 'A' + 10);
+        if ((b >= '0') && (b <= '9')) return (byte) (b - '0');
+        if ((b >= 'a') && (b <= 'f')) return (byte) (b - 'a' + 10);
+        if ((b >= 'A') && (b <= 'F')) return (byte) (b - 'A' + 10);
         return 0;
     }
 
-    public void parseParameters(Map<String,String[]> map, byte[] data, String encoding)
+    public void parseParameters(Map<String, String[]> map, byte[] data, String encoding)
             throws UnsupportedEncodingException {
         if (parsed)
             return;
-        System.out.println(data);
+        log.info(Arrays.toString(data));
         if (data != null && data.length > 0) {
-            int    pos = 0;
-            int    ix = 0;
-            int    ox = 0;
+            int pos = 0;
+            int ix = 0;
+            int ox = 0;
             String key = null;
             String value = null;
             while (ix < data.length) {
@@ -273,7 +289,7 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
                     case '&':
                         value = new String(data, 0, ox, encoding);
                         if (key != null) {
-                            putMapEntry(map,key, value);
+                            putMapEntry(map, key, value);
                             key = null;
                         }
                         ox = 0;
@@ -283,10 +299,10 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
                         ox = 0;
                         break;
                     case '+':
-                        data[ox++] = (byte)' ';
+                        data[ox++] = (byte) ' ';
                         break;
                     case '%':
-                        data[ox++] = (byte)((convertHexDigit(data[ix++]) << 4)
+                        data[ox++] = (byte) ((convertHexDigit(data[ix++]) << 4)
                                 + convertHexDigit(data[ix++]));
                         break;
                     default:
@@ -296,13 +312,13 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
             //The last value does not end in '&'.  So save it now.
             if (key != null) {
                 value = new String(data, 0, ox, encoding);
-                putMapEntry(map,key, value);
+                putMapEntry(map, key, value);
             }
         }
         parsed = true;
     }
 
-    private static void putMapEntry( Map<String,String[]> map, String name, String value) {
+    private static void putMapEntry(Map<String, String[]> map, String name, String value) {
         String[] newValues = null;
         String[] oldValues = (String[]) map.get(name);
         if (oldValues == null) {
@@ -314,10 +330,6 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
             newValues[oldValues.length] = value;
         }
         map.put(name, newValues);
-    }
-
-    public String getUri() {
-        return this.uri;
     }
 
     @Override
@@ -393,7 +405,7 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
     @Override
     public String getParameter(String name) {
         parseParameters();
-        String values[] = parameters.get(name);
+        String[] values = parameters.get(name);
         if (values != null)
             return (values[0]);
         else
@@ -415,11 +427,7 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
     @Override
     public String[] getParameterValues(String name) {
         parseParameters();
-        String values[] = parameters.get(name);
-        if (values != null)
-            return (values);
-        else
-            return (null);
+        return parameters.get(name);
     }
 
     @Override
@@ -698,74 +706,95 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
     public Connector getConnector() {
         return null;
     }
+
     @Override
     public void setConnector(Connector connector) {
     }
+
     @Override
     public Context getContext() {
         return null;
     }
+
     @Override
     public void setContext(Context context) {
     }
+
     @Override
     public String getInfo() {
         return null;
     }
+
     @Override
     public ServletRequest getRequest() {
         return null;
     }
+
     @Override
     public Response getResponse() {
         return null;
     }
+
     @Override
     public void setResponse(Response response) {
     }
+
     @Override
     public Socket getSocket() {
         return null;
     }
+
     @Override
     public void setSocket(Socket socket) {
     }
+
     @Override
     public InputStream getStream() {
         return null;
     }
+
     @Override
     public Wrapper getWrapper() {
         return null;
     }
+
     @Override
     public void setWrapper(Wrapper wrapper) {
     }
+
     @Override
     public ServletInputStream createInputStream() throws IOException {
         return null;
     }
+
     @Override
     public void finishRequest() throws IOException {
     }
+
     @Override
     public void recycle() {
     }
+
     @Override
     public void setContentLength(int length) {
     }
+
     @Override
     public void setContentType(String type) {
     }
+
     @Override
     public void setProtocol(String protocol) {
     }
+
     @Override
     public void setRemoteAddr(String remote) {
     }
+
     @Override
     public void setScheme(String scheme) {
     }
+
     @Override
     public void setServerPort(int port) {
     }

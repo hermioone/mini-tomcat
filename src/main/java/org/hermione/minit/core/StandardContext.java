@@ -11,19 +11,13 @@ import org.hermione.minit.Request;
 import org.hermione.minit.Response;
 import org.hermione.minit.Wrapper;
 import org.hermione.minit.connector.http.HttpConnector;
-import org.hermione.minit.startup.Bootstrap;
 import org.hermione.minit.valves.AuthorityCheckValve;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.net.URLStreamHandler;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,8 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StandardContext extends ContainerBase implements Context {
     @Getter
     HttpConnector connector = null;
-    @Getter
-    ClassLoader loader = null;
     //包含servlet类和实例的map
     Map<String, String> servletClsMap = new ConcurrentHashMap<>(); //servletName - ServletClassName
     Map<String, StandardWrapper> servletInstanceMap = new ConcurrentHashMap<>();//servletName - servlet
@@ -45,24 +37,13 @@ public class StandardContext extends ContainerBase implements Context {
         Pipeline pipeline = getPipeline();
         pipeline.addValve(new AuthorityCheckValve(pipeline));
         pipeline.setBasic(new StandardContextValve(pipeline));
-        try {
-            // create a URLClassLoader
-            URL[] urls = new URL[1];
-            URLStreamHandler streamHandler = null;
-            File classPath = new File(Bootstrap.WEB_ROOT);
-            String repository = (new URL("file", null, classPath.getCanonicalPath() + File.separator)).toString();
-            urls[0] = new URL(null, repository, streamHandler);
-            loader = new URLClassLoader(urls);
-        } catch (IOException e) {
-            log("Fail to init StandardContext.", e);
-        }
         log("Container created.");
     }
 
     public Wrapper getWrapper(String name) {
         StandardWrapper servletWrapper = servletInstanceMap.get(name);
         if (servletWrapper == null) {
-            servletWrapper = new StandardWrapper(name, this);
+            servletWrapper = new StandardWrapper(name, this, this.getLoader());
             this.servletClsMap.put(name, name);
             this.servletInstanceMap.put(name, servletWrapper);
         }
@@ -73,9 +54,6 @@ public class StandardContext extends ContainerBase implements Context {
         return null;
     }
 
-    public void setLoader(ClassLoader loader) {
-        this.loader = loader;
-    }
 
     public void setConnector(HttpConnector connector) {
         this.connector = connector;
@@ -97,7 +75,7 @@ public class StandardContext extends ContainerBase implements Context {
 
     @Override
     public void setDocBase(String docBase) {
-
+        this.docbase = docBase;
     }
 
     @Override
@@ -279,9 +257,8 @@ public class StandardContext extends ContainerBase implements Context {
         }
     }
 
-    public boolean listenerStart() {
-        System.out.println("Listener Start..........");
-        boolean ok = true;
+    public void listenerStart() {
+        log.info("Listener Start..........");
         synchronized (listeners) {
             listeners.clear();
             for (ContainerListenerDef def : listenerDefs) {
@@ -289,21 +266,18 @@ public class StandardContext extends ContainerBase implements Context {
                 try {
                     // 确定我们将要使用的类加载器
                     String listenerClass = def.getListenerClass();
-                    ClassLoader classLoader = null;
-                    classLoader = this.getLoader();
+                    WebappClassLoader classLoader = this.getLoader();
                     ClassLoader oldCtxClassLoader =
                             Thread.currentThread().getContextClassLoader();
                     // 创建这个过滤器的新实例并返回它
-                    Class<?> clazz = classLoader.loadClass(listenerClass);
+                    Class<?> clazz = classLoader.getClassLoader().loadClass(listenerClass);
                     listener = (ContainerListener) clazz.newInstance();
                     addContainerListener(listener);
                 } catch (Throwable t) {
                     log.error(ExceptionUtils.getStackTrace(t));
-                    ok = false;
                 }
             }
         }
-        return (ok);
     }
 }
 

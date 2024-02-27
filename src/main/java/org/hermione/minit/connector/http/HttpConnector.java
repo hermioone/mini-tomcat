@@ -5,6 +5,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hermione.minit.core.StandardContext;
+import org.hermione.minit.core.StandardHost;
 import org.hermione.minit.session.StandardSession;
 
 import javax.servlet.http.HttpSession;
@@ -40,7 +41,7 @@ public class HttpConnector implements Runnable {
     //这是与connector相关联的container
     @Getter
     @Setter
-    StandardContext container = null;
+    StandardHost container = null;
 
     public void run() {
         ServerSocket serverSocket = null;

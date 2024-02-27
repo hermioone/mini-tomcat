@@ -1,8 +1,8 @@
 package org.hermione.minit;
 
+import org.hermione.minit.core.WebappClassLoader;
+
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public interface Container {
@@ -11,9 +11,9 @@ public interface Container {
 
     public String getInfo();
 
-    public ClassLoader getLoader();
+    public WebappClassLoader getLoader();
 
-    public void setLoader(ClassLoader loader);
+    public void setLoader(WebappClassLoader loader);
 
     public String getName();
 
