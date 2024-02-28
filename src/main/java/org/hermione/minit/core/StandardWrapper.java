@@ -5,6 +5,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hermione.minit.Container;
+import org.hermione.minit.Loader;
 import org.hermione.minit.Pipeline;
 import org.hermione.minit.Request;
 import org.hermione.minit.Response;
@@ -24,7 +25,7 @@ public class StandardWrapper extends ContainerBase implements Wrapper {
     @Setter
     private String servletClass;
 
-    public StandardWrapper(String servletClass, StandardContext parent, WebappClassLoader loader) {
+    public StandardWrapper(String servletClass, StandardContext parent, Loader loader) {
 
         super("StandardWrapper");
         Pipeline pipeline = getPipeline();
@@ -57,7 +58,7 @@ public class StandardWrapper extends ContainerBase implements Wrapper {
         if (actualClass == null) {
             throw new ServletException("servlet class has not been specified");
         }
-        WebappClassLoader classLoader = getLoader();
+        Loader classLoader = getLoader();
         Class<?> classClass = null;
         try {
             if (classLoader != null) {

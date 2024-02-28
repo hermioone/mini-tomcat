@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hermione.minit.ContainerEvent;
 import org.hermione.minit.ContainerListener;
+import org.hermione.minit.Loader;
 import org.hermione.minit.Pipeline;
 import org.hermione.minit.Request;
 import org.hermione.minit.Response;
@@ -52,7 +53,7 @@ public class StandardHost extends ContainerBase {
         StandardContext context = contextMap.get(name);
         if (context == null) {
             //创建新的context，有自己独立的根目录和类加载器
-            WebappClassLoader loader = new WebappClassLoader();
+            Loader loader = new WebappLoader(name, this.getLoader().getClassLoader());
             context = new StandardContext();
             context.setDocBase(name);
             context.setConnector(connector);
@@ -119,11 +120,9 @@ public class StandardHost extends ContainerBase {
                 try {
                     // Identify the class loader we will be using
                     String listenerClass = def.getListenerClass();
-                    WebappClassLoader classLoader = null;
+                    Loader classLoader = null;
                     //host对应的loader就是listener的loader
                     classLoader = this.getLoader();
-                    ClassLoader oldCtxClassLoader =
-                            Thread.currentThread().getContextClassLoader();
                     // Instantiate a new instance of this filter and return it
                     Class<?> clazz = classLoader.getClassLoader().loadClass(listenerClass);
                     listener = (ContainerListener) clazz.newInstance();

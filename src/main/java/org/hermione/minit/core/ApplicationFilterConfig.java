@@ -1,6 +1,7 @@
 package org.hermione.minit.core;
 
 import org.hermione.minit.Context;
+import org.hermione.minit.Loader;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
@@ -65,11 +66,9 @@ final class ApplicationFilterConfig implements FilterConfig {
             return (this.filter);
         // 确定我们将使用的类加载器
         String filterClass = filterDef.getFilterClass();
-        WebappClassLoader classLoader = context.getLoader();
-        ClassLoader oldCtxClassLoader =
-                Thread.currentThread().getContextClassLoader();
+        Loader loader = context.getLoader();
         // 实例化这个过滤器的新实例并返回
-        Class<?> clazz = classLoader.getClassLoader().loadClass(filterClass);
+        Class<?> clazz = loader.getClassLoader().loadClass(filterClass);
         this.filter = (Filter) clazz.newInstance();
         filter.init(this);
         return (this.filter);

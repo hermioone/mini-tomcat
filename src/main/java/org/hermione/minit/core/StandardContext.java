@@ -6,6 +6,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hermione.minit.ContainerEvent;
 import org.hermione.minit.ContainerListener;
 import org.hermione.minit.Context;
+import org.hermione.minit.Loader;
 import org.hermione.minit.Pipeline;
 import org.hermione.minit.Request;
 import org.hermione.minit.Response;
@@ -266,11 +267,9 @@ public class StandardContext extends ContainerBase implements Context {
                 try {
                     // 确定我们将要使用的类加载器
                     String listenerClass = def.getListenerClass();
-                    WebappClassLoader classLoader = this.getLoader();
-                    ClassLoader oldCtxClassLoader =
-                            Thread.currentThread().getContextClassLoader();
+                    Loader loader1 = this.getLoader();
                     // 创建这个过滤器的新实例并返回它
-                    Class<?> clazz = classLoader.getClassLoader().loadClass(listenerClass);
+                    Class<?> clazz = loader1.getClassLoader().loadClass(listenerClass);
                     listener = (ContainerListener) clazz.newInstance();
                     addContainerListener(listener);
                 } catch (Throwable t) {
