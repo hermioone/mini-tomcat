@@ -1,4 +1,4 @@
-package org.hermione.minit.core;
+package org.hermione.minit.loader;
 
 import lombok.Getter;
 import lombok.Setter;

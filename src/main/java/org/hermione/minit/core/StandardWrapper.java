@@ -58,14 +58,14 @@ public class StandardWrapper extends ContainerBase implements Wrapper {
         if (actualClass == null) {
             throw new ServletException("servlet class has not been specified");
         }
-        Loader classLoader = getLoader();
+        Loader loader = getLoader();
         Class<?> classClass = null;
         try {
-            if (classLoader != null) {
-                classClass = classLoader.getClassLoader().loadClass(actualClass);
+            if (loader != null) {
+                classClass = loader.getClassLoader().loadClass(actualClass);
             }
         } catch (ClassNotFoundException e) {
-            throw new ServletException("Servlet class not found");
+            throw new ServletException("Servlet class not found: " + actualClass + ", " + loader.getInfo());
         }
         try {
             servlet = (Servlet) Objects.requireNonNull(classClass).newInstance();

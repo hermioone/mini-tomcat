@@ -1,7 +1,5 @@
 package org.hermione.minit;
 
-import org.hermione.minit.core.WebappClassLoader;
-
 import javax.servlet.ServletException;
 import java.io.IOException;
 

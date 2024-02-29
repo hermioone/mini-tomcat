@@ -1,4 +1,4 @@
-package org.hermione.minit.core;
+package org.hermione.minit.loader;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -12,61 +12,63 @@ import java.net.URL;
 import java.net.URLStreamHandler;
 
 /**
- * 从应用的 WEB-INF/classes 目录下加载类
+ * 加载 tomcat 的 lib 目录
  */
 @Slf4j
-public class WebappLoader implements Loader {
+public class CommonLoader implements Loader {
     @Getter
     ClassLoader classLoader;
     ClassLoader parent;
     @Getter
-            @Setter
+    @Setter
     String path;
     @Getter
-            @Setter
+    @Setter
     String docbase;
     @Getter
-            @Setter
     Container container;
-    public WebappLoader(String docbase) {
-        this.docbase = docbase;
+
+    public CommonLoader() {
     }
-    public WebappLoader(String docbase, ClassLoader parent) {
-        this.docbase = docbase;
+
+    public CommonLoader(ClassLoader parent) {
         this.parent = parent;
+    }
+
+    public void setContainer(Container container) {
+        this.container = container;
     }
 
 
     public String getInfo() {
         return "A simple loader";
     }
+
     public void addRepository(String repository) {
     }
+
     public String[] findRepositories() {
         return null;
     }
+
     public synchronized void start() {
-        log.info("Starting WebappLoader");
+        System.out.println("Starting Common Loader, docbase: " + docbase);
         try {
-            // create a URLClassLoader
-            //加载目录是minit.base规定的根目录，加上应用目录，
-            //然后之下的WEB-INF/classes目录
-            //这意味着每一个应用有自己的类加载器，达到隔离的目的
+            // 创建一个URLClassLoader
+            //类加载目录是minit安装目录下的lib目录
             URL[] urls = new URL[1];
             URLStreamHandler streamHandler = null;
-            File classPath = new File(System.getProperty("minit.base"));
+            File classPath = new File(System.getProperty("minit.home"));
             String repository = (new URL("file", null, classPath.getCanonicalPath() + File.separator)).toString();
-            if (docbase != null && !docbase.isEmpty()) {
-                repository = repository + docbase + File.separator;
-            }
-            repository = repository + "WEB-INF" + File.separator + "classes" + File.separator;
+            repository = repository + "lib" + File.separator;
             urls[0] = new URL(null, repository, streamHandler);
-            log.info("Webapp classloader Repository: {}", repository);
-            classLoader = new WebappClassLoader(urls, parent);
+            log.info("Common classloader Repository: {}", repository);
+            classLoader = new CommonClassLoader(urls);
         } catch (Exception e) {
             log.error(ExceptionUtils.getStackTrace(e));
         }
     }
+
     public void stop() {
     }
 }

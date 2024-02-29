@@ -3,6 +3,10 @@ package org.hermione.minit.core;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
 import org.hermione.minit.ContainerEvent;
 import org.hermione.minit.ContainerListener;
 import org.hermione.minit.Context;
@@ -17,10 +21,12 @@ import org.hermione.minit.valves.AuthorityCheckValve;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("deprecation")
@@ -41,14 +47,17 @@ public class StandardContext extends ContainerBase implements Context {
         log("Container created.");
     }
 
-    public Wrapper getWrapper(String name) {
+    public void initWrapper(String name, String serverClass) {
         StandardWrapper servletWrapper = servletInstanceMap.get(name);
         if (servletWrapper == null) {
-            servletWrapper = new StandardWrapper(name, this, this.getLoader());
-            this.servletClsMap.put(name, name);
+            servletWrapper = new StandardWrapper(serverClass, this, this.getLoader());
+            this.servletClsMap.put(name, serverClass);
             this.servletInstanceMap.put(name, servletWrapper);
         }
-        return servletWrapper;
+    }
+
+    public Wrapper initWrapper(String name) {
+        return Objects.requireNonNull(servletInstanceMap.get(name), "Invalid context");
     }
 
     public String getInfo() {
@@ -186,7 +195,7 @@ public class StandardContext extends ContainerBase implements Context {
         }
     }
     //对配置好的所有filter名字，创建实例，存储在filterConfigs中，可以生效了
-    public boolean filterStart() {
+    public void filterStart() {
         log.info("Filter Start..........");
         // 为每个定义的过滤器实例化并记录一个FilterConfig
         boolean ok = true;
@@ -202,7 +211,6 @@ public class StandardContext extends ContainerBase implements Context {
                 }
             }
         }
-        return (ok);
     }
     public FilterConfig findFilterConfig(String name) {
         return (filterConfigs.get(name));
@@ -225,6 +233,79 @@ public class StandardContext extends ContainerBase implements Context {
     public void start(){
         // 触发一个容器启动事件
         fireContainerEvent("Container Started",this);
+
+        // 扫描并解析 web.xml
+        //扫描 web.xml
+        String file = System.getProperty("minit.base") + File.separator +
+                this.docbase + File.separator + "WEB-INF" + File.separator + "web.xml";
+        SAXReader reader = new SAXReader();
+        Document document;
+        try {
+            document = reader.read(file);
+            Element root = document.getRootElement();
+            //listeners
+            List<Element> listeners = root.elements("listener");
+            for (Element listener : listeners) {
+                Element listenerclass = listener.element("listener-class");
+                String listenerclassname = listenerclass.getText();
+                log.info("listenerclassname: {}", listenerclassname);
+                //加载 listeners
+                ContainerListenerDef listenerDef = new ContainerListenerDef();
+                listenerDef.setListenerName(listenerclassname);
+                listenerDef.setListenerClass(listenerclassname);
+                addListenerDef(listenerDef);
+            }
+            listenerStart();
+            //filters
+            List<Element> filters = root.elements("filter");
+            for (Element filter : filters) {
+                Element filetername = filter.element("filter-name");
+                String fileternamestr = filetername.getText();
+                Element fileterclass = filter.element("filter-class");
+                String fileterclassstr = fileterclass.getText();
+                log.info("filter, {}, {}",fileternamestr, fileterclassstr);
+                //加载 filters
+                FilterDef filterDef = new FilterDef();
+                filterDef.setFilterName(fileternamestr);
+                filterDef.setFilterClass(fileterclassstr);
+                addFilterDef(filterDef);
+            }
+            //filter 映射
+            List<Element> filtermaps = root.elements("filter-mapping");
+            for (Element filtermap : filtermaps) {
+                Element filetername = filtermap.element("filter-name");
+                String fileternamestr = filetername.getText();
+                Element urlpattern = filtermap.element("url-pattern");
+                String urlpatternstr = urlpattern.getText();
+                log.info("filter mapping, {}, {}", fileternamestr, urlpatternstr);
+                FilterMap filterMap = new FilterMap();
+                filterMap.setFilterName(fileternamestr);
+                filterMap.setUrlPattern(urlpatternstr);
+                addFilterMap(filterMap);
+            }
+            filterStart();
+            //servlet
+            List<Element> servlets = root.elements("servlet");
+            for (Element servlet : servlets) {
+                Element servletname = servlet.element("servlet-name");
+                String servletnamestr = servletname.getText();
+                Element servletclass = servlet.element("servlet-class");
+                String servletclassstr = servletclass.getText();
+                Element loadonstartup = servlet.element("load-on-startup");
+                String loadonstartupstr = null;
+                if (loadonstartup != null) {
+                    loadonstartupstr = loadonstartup.getText();
+                }
+                log.info("servlet, {}, {}", servletnamestr, servletclassstr);
+                this.servletClsMap.put(servletnamestr, servletclassstr);
+                if (loadonstartupstr != null) {
+                    initWrapper(servletnamestr, servletclassstr);
+                }
+            }
+        } catch (DocumentException e) {
+            log.error(ExceptionUtils.getStackTrace(e));
+        }
+        log.info("Context started.........");
     }
     public void addContainerListener(ContainerListener listener) {
         // 添加一个新的容器监听器到监听器列表，并确保线程安全

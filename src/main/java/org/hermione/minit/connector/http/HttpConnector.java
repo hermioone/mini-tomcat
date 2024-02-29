@@ -29,6 +29,12 @@ public class HttpConnector implements Runnable {
     int maxProcessors = 10;
     int curProcessors = 0;
 
+    private final int port;
+
+    public HttpConnector(int port) {
+        this.port = port;
+    }
+
     /**
      * 这里为什么不使用 JDK 中的线程池呢？
      * 因为 JDK 中的线程池当线程数 > coreSize 时，会将多余的线程塞入队列中，如果队列塞满后才会继续创建新线程，直到到达线程池的 maxSize
@@ -45,7 +51,6 @@ public class HttpConnector implements Runnable {
 
     public void run() {
         ServerSocket serverSocket = null;
-        int port = 8080;
         try {
             serverSocket = new ServerSocket(port, 1, InetAddress.getByName("127.0.0.1"));
         } catch (IOException e) {

@@ -11,11 +11,14 @@ import org.hermione.minit.Pipeline;
 import org.hermione.minit.Request;
 import org.hermione.minit.Response;
 import org.hermione.minit.connector.http.HttpConnector;
+import org.hermione.minit.loader.WebappLoader;
 
 import javax.servlet.ServletException;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("deprecation")
@@ -24,7 +27,7 @@ public class StandardHost extends ContainerBase {
     @Getter
     @Setter
     HttpConnector connector = null;
-    //host中用一个map存储了所管理的 context，一个 context 代表了一个独立的web应用
+    //host中用一个map存储了所管理的 context，一个 context 代表了一个独立的 web 应用
     Map<String, StandardContext> contextMap = new ConcurrentHashMap<>();//contextName - servletContext
     //下面的listener是host本身的监听
     private final ArrayList<ContainerListenerDef> listenerDefs = new ArrayList<>();
@@ -52,6 +55,7 @@ public class StandardHost extends ContainerBase {
     public StandardContext getContext(String name) {
         StandardContext context = contextMap.get(name);
         if (context == null) {
+            log.info("loading context: {}", name);
             //创建新的context，有自己独立的根目录和类加载器
             Loader loader = new WebappLoader(name, this.getLoader().getClassLoader());
             context = new StandardContext();
@@ -59,6 +63,7 @@ public class StandardHost extends ContainerBase {
             context.setConnector(connector);
             context.setLoader(loader);
             loader.start();
+            context.start();
             this.contextMap.put(name, context);
         }
         return context;
@@ -73,6 +78,14 @@ public class StandardHost extends ContainerBase {
         listenerDef.setListenerClass("app1.TestListener");
         // addListenerDef(listenerDef);
         listenerStart();
+
+        // 在启动时加载 /webapps目录下 所有的上下文（Context）
+        // minit.base 就是应用的基础目录，比如 webapps，我们认为它下面的每个子目录都代表了一个不同的应用。这个属性是在 BootStrap 里设置的
+        File classPath = new File(System.getProperty("minit.base"));
+        String[] dirs = Objects.requireNonNull(classPath.list());
+        for (String dir : dirs) {
+            getContext(dir);
+        }
     }
 
     private void initListeners() {

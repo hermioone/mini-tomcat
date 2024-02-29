@@ -2,7 +2,6 @@ package org.hermione.minit.core;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.hermione.minit.Container;
 import org.hermione.minit.Pipeline;
 import org.hermione.minit.Request;
 import org.hermione.minit.Response;
@@ -31,7 +30,7 @@ final class StandardContextValve extends ValveBase {
         String uri = ((HttpRequestImpl) request).getUri();
         String servletName = uri.substring(uri.lastIndexOf("/") + 1);
         StandardContext context = (StandardContext) getPipeline().getContainer();
-        servletWrapper = (StandardWrapper) context.getWrapper(servletName);
+        servletWrapper = (StandardWrapper) context.initWrapper(servletName);
         try {
             log.info("Call ServletWrapper");
             servletWrapper.invoke(request, response);
